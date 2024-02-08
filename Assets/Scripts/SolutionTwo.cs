@@ -1,11 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
-public class SolutionOne : MonoBehaviour
+public class SolutionTwo : MonoBehaviour
 {
-
     // Variables that will be inputted in the inspector.
     public string playerName;
     public int playerLevel;
@@ -15,29 +13,54 @@ public class SolutionOne : MonoBehaviour
     public bool hasToughFeat;
     public bool averageOrRolled; // Average is false and rolled is true.
     private int maxHealth;
-    private int expectedValue;
-
 
     // Start is called before the first frame update
     void Start()
     {
         CalculateHitPoints();
-        Debug.Log($"(Solution 1) {playerName} is level {playerLevel}. Their HP is {maxHealth}");
+        Debug.Log($"(Solution 2) {playerName} is level {playerLevel}. Their HP is {maxHealth}");
     }
 
-    void CalculateHitPoints() // Does as the name suggests.
+    public void CalculateHitPoints()
     {
         maxHealth = 0;
 
-        // Set our number of die to our player number since they coincide.
         int numberOfDie = playerLevel;
 
+        int dieLevel = PlayerClassHelper.GetClassDie(playerClass);
 
-        int dieLevel = 0; // the number of pips on the die
+        int modifier = PlayerClassHelper.GetConstitutionModifier(constitutionScore);
 
-        //Use switch statement to determine which hit die we are using.
-        //
+        if (!averageOrRolled) 
+        {
+            int expectedValue = PlayerClassHelper.CalculateExpectedValue(numberOfDie, dieLevel, modifier);
+            maxHealth = expectedValue;
+        }
 
+        //If statement to determine if you are a dwarf. Add playerLevel to maxHealth;
+        if (isHillDwarf)
+        {
+            maxHealth += playerLevel;
+        }
+
+        //If statement to see if hasToughFeat. Add playerLevel*2 to maxHealth;
+        if (hasToughFeat)
+        {
+            maxHealth += (playerLevel * 2);
+        }
+
+        if (averageOrRolled)
+        {
+            maxHealth += PlayerClassHelper.RollAllDie(numberOfDie, dieLevel, modifier);
+        }
+    }
+
+}
+
+public class PlayerClassHelper
+{
+    public static int GetClassDie(string playerClass)
+    {
         Dictionary<string, int> classDie = new Dictionary<string, int>
         {
             { "Sorcerer", 6 },
@@ -58,13 +81,16 @@ public class SolutionOne : MonoBehaviour
             { "Barbarian", 12 },
         };
 
-        dieLevel = classDie[playerClass];
+        if (!classDie.ContainsKey(playerClass))
+            return 0;
 
+        return classDie[playerClass];
+    }
 
-        int modifier = 0; // Used to modify the hp
+    public static int GetConstitutionModifier(int constitutionScore)
+    {
+        int modifier = 0;
 
-        //Depending on the player's level we adjust the modifier.
-        //Use switch statement for each.
         switch (constitutionScore)
         {
             case 1:
@@ -150,59 +176,26 @@ public class SolutionOne : MonoBehaviour
                 break;
         }
 
-
-        //If statement to check if average. 
-        if (!averageOrRolled)
-        {
-            //Calculate expected value Return.
-            CalculateExpectedValue(numberOfDie, dieLevel, modifier);
-
-            maxHealth = expectedValue;
-        }
-
-
-        //If statement to determine if you are a dwarf. Add playerLevel to maxHealth;
-        if (isHillDwarf) 
-        {
-            maxHealth += playerLevel;
-        }
-
-        //If statement to see if hasToughFeat. Add playerLevel*2 to maxHealth;
-        if (hasToughFeat)
-        {
-            maxHealth += (playerLevel * 2);
-        }
-
-        if (averageOrRolled)
-        {
-            var rollArray = new int[numberOfDie];
-
-            //For loop based on the number of die.
-            //{
-            //	Roll die 
-            //	Take that value and add it maxHealth.
-            //}
-            for (int i = 0; i < numberOfDie; i++)
-            {
-                //Modifier + die
-                rollArray[i] = Random.Range(1, dieLevel) + modifier;
-            }
-
-            foreach (var value in rollArray)
-            {
-                maxHealth += value;
-            }
-        }
-
+        return modifier;
     }
 
-    void CalculateExpectedValue(int numberOfDie, int dieLevel, int constitutionModifier)
+    public static int CalculateExpectedValue(int numberOfDie, int dieLevel, int constitutionModifier)
     {
         float average = 0;
 
         average = ((dieLevel + 1) / 2f) * numberOfDie + (constitutionModifier * numberOfDie);
 
-        expectedValue = (int) average;
+        return (int) average;
+    }
+
+    public static int RollAllDie(int numberOfDie, int dieLevel, int constitutionModifier)
+    {
+        int total = 0;
+
+        for (int i = 0; i < numberOfDie; i++)
+            total += Random.Range(1, dieLevel) + constitutionModifier;
+
+        return total;
     }
 
 }
